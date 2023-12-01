@@ -149,9 +149,16 @@ def main() -> None:
     col1, col2 = st.columns(2)
 
     with col1.expander("Výběr dat"):
-        # TODO použít file upload for načtení uživatelských dat
-        st.write("Vstupní data jsou ze souboru fish_data.csv")
-    source_data = load_data(DATA_DIR / "fish_data.csv")
+        data_file_path = st.file_uploader("Data file")
+
+        if data_file_path is None:
+            st.warning("No data file uploaded")
+            return
+
+        # read data if user uploads a file
+        source_data = pd.read_csv(data_file_path)
+        # seek back to position 0 after reading
+        data_file_path.seek(0)
 
     with col1.expander("Preprocessing"):
         drop_columns = st.multiselect("Drop columns", source_data.columns)
@@ -166,7 +173,20 @@ def main() -> None:
         else:
             displayed_data = source_data
             # st.dataframe(displayed_data)
-        # TODO přidat grafy
+        # vstup 2: výběr parametrů scatter matrix
+        dimensions = st.multiselect("Scatter matrix dimensions", list(displayed_data.columns), default=list(displayed_data.columns))
+        color = st.selectbox("Color", displayed_data.columns)
+        opacity = st.slider("Opacity", 0.0, 1.0, 0.5)
+
+        # scatter matrix plat
+        st.write(px.scatter_matrix(displayed_data, dimensions=dimensions, color=color, opacity=opacity))
+
+        # výběr sloupce pro zobrazení rozdělení dat
+        interesting_column = st.selectbox("Interesting column", displayed_data.columns)
+        # výběr funkce pro zobrazení rozdělovací funkce
+        dist_plot = st.selectbox("Plot type", [px.box, px.histogram, px.violin])
+
+        st.write(dist_plot(displayed_data, x=interesting_column, color=color))
         st.dataframe(displayed_data)
 
     target = col1.selectbox("Sloupec s odezvou", learning_data.columns)
