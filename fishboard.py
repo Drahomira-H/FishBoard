@@ -8,10 +8,13 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+import seaborn as sns
 from sklearn.linear_model import Lasso, LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVR
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 from streamlit.delta_generator import DeltaGenerator
 
 
@@ -187,6 +190,19 @@ def main() -> None:
         dist_plot = st.selectbox("Plot type", [px.box, px.histogram, px.violin])
 
         st.write(dist_plot(displayed_data, x=interesting_column, color=color))
+
+        # PCA
+        scaler = StandardScaler()
+        displayed_data_scaled = scaler.fit_transform(displayed_data)
+
+        # Výpočet PCA komponent
+        pca = PCA(n_components=2)
+        displayed_data_pca = pd.DataFrame(pca.fit_transform(displayed_data_scaled), columns=['PCA1', 'PCA2'])
+
+        # TODO ověřit správnost grafu, přidat možnost více komponent, upravit volbu sloupců pro PCA a vykreslení
+        scatterplot = sns.scatterplot(x=displayed_data_pca.PCA1, y=displayed_data_pca.PCA2, hue=displayed_data[color])
+
+        st.pyplot(scatterplot.get_figure())
         st.dataframe(displayed_data)
 
     target = col1.selectbox("Sloupec s odezvou", learning_data.columns)
